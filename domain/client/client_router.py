@@ -60,6 +60,9 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
     db_client = db.query(Client).filter(Client.id == client_id).first()
     if db_client is None:
         raise HTTPException(status_code=404, detail="Client not found")
+    
+    if not valid_states(client.state):
+        raise HTTPException(status_code=400, detail=f"I'm sorry, {client.state} is not within our service range")
 
     db_client.name = client.name
     db_client.email = client.email
