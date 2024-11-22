@@ -7,7 +7,7 @@ from database import get_db, Client
 router = APIRouter()
 
 
-
+# can probably combine state check/format into one function
 def valid_states(state:str) -> bool:
     """
     Determines if a state is a valid state (distance), 
@@ -17,8 +17,18 @@ def valid_states(state:str) -> bool:
 
     return state.lower() in valid_states
         
+def format_state(state:str) -> str:
+    """
+    Returns a unified state format (PA)
+    """
+    
+    state_dico = {'pennsylvania':'PA', 'new jersey':'NJ', 'new york':'NY', 'delaware':'DE', 'maryland':'MD'}
 
-
+    if len(state) == 2:
+        return state.upper()
+    
+    return state_dico[state.lower()]
+ 
 @router.post("/client/", response_model=ClientResponse)
 def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     print()
@@ -26,12 +36,15 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     print()
     if not valid_states(client.state):
         raise HTTPException(status_code=400, detail=f"I'm sorry, {client.state} is not within our service range")
+    
+    formatted_state = format_state(client.state)
+
     db_client = Client(
         name=client.name,
         email=client.email,
         address=client.address,
         city=client.city,
-        state=client.state,
+        state=formatted_state,
         date=client.date,
     )
     db.add(db_client)
@@ -63,12 +76,14 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
     
     if not valid_states(client.state):
         raise HTTPException(status_code=400, detail=f"I'm sorry, {client.state} is not within our service range")
+    
+    formatted_state = format_state(client.state)
 
     db_client.name = client.name
     db_client.email = client.email
     db_client.address = client.address
     db_client.city = client.city
-    db_client.state = client.state
+    db_client.state = formatted_state
     db_client.date = client.date
     db.commit()
     db.refresh(db_client)
