@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import asc, desc
 from domain.client.client_schema import ClientCreate, ClientUpdate, ClientResponse
 from database import get_db, Client
 
@@ -7,36 +8,17 @@ from database import get_db, Client
 router = APIRouter()
 
 
-# can probably combine state check/format into one function
-def valid_states(state:str) -> bool:
-    """
-    Determines if a state is a valid state (distance), 
-    otherwise the event cannot be accepted
-    """
-    valid_states = {'pa', 'pennsylvania', 'nj', 'new jersey', 'ny', 'new york', 'de', 'delaware', 'md', 'maryland'}
-
-    return state.lower() in valid_states
-        
-def format_state(state:str) -> str:
-    """
-    Returns a unified state format (PA)
-    """
-    
-    state_dico = {'pennsylvania':'PA', 'new jersey':'NJ', 'new york':'NY', 'delaware':'DE', 'maryland':'MD'}
-
-    if len(state) == 2:
-        return state.upper()
-    
-    return state_dico[state.lower()]
- 
 @router.post("/client/", response_model=ClientResponse)
 def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     print()
     print(client)
     print()
     if not valid_states(client.state):
-        raise HTTPException(status_code=400, detail=f"I'm sorry, {client.state} is not within our service range")
-    
+        raise HTTPException(
+            status_code=400,
+            detail=f"I'm sorry, {client.state} is not within our service range",
+        )
+
     formatted_state = format_state(client.state)
 
     db_client = Client(
@@ -55,8 +37,22 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/client/", response_model=list[ClientResponse])
-def read_clients(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    clients = db.query(Client).offset(skip).limit(limit).all()
+def read_clients(db: Session = Depends(get_db)):
+    # remove skip and limit of 10
+    clients = db.query(Client).all()
+    return clients
+
+
+@router.get("/client/{direction}", response_model=list[ClientResponse])
+def sort_by_date(direction: str, db: Session = Depends(get_db)):
+    """
+    sort client event dates ascending or descending
+    """
+    if direction == "asc":
+        clients = db.query(Client).order_by(Client.date.asc()).all()
+        return clients
+
+    clients = db.query(Client).order_by(Client.date.desc()).all()
     return clients
 
 
@@ -73,10 +69,13 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
     db_client = db.query(Client).filter(Client.id == client_id).first()
     if db_client is None:
         raise HTTPException(status_code=404, detail="Client not found")
-    
+
     if not valid_states(client.state):
-        raise HTTPException(status_code=400, detail=f"I'm sorry, {client.state} is not within our service range")
-    
+        raise HTTPException(
+            status_code=400,
+            detail=f"I'm sorry, {client.state} is not within our service range",
+        )
+
     formatted_state = format_state(client.state)
 
     db_client.name = client.name
@@ -99,3 +98,49 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     db.delete(db_client)
     db.commit()
     return {"detail": "Client deleted successfully"}
+
+
+# -----------------------------------------------------------------------
+#            Utilities
+# -----------------------------------------------------------------------
+
+
+# can probably combine state check/format into one function
+def valid_states(state: str) -> bool:
+    """
+    Determines if a state is a valid state (distance),
+    otherwise the event cannot be accepted
+    """
+    valid_states = {
+        "pa",
+        "pennsylvania",
+        "nj",
+        "new jersey",
+        "ny",
+        "new york",
+        "de",
+        "delaware",
+        "md",
+        "maryland",
+    }
+
+    return state.lower() in valid_states
+
+
+def format_state(state: str) -> str:
+    """
+    Returns a unified state format (PA)
+    """
+
+    state_dico = {
+        "pennsylvania": "PA",
+        "new jersey": "NJ",
+        "new york": "NY",
+        "delaware": "DE",
+        "maryland": "MD",
+    }
+
+    if len(state) == 2:
+        return state.upper()
+
+    return state_dico[state.lower()]
