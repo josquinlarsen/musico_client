@@ -10,9 +10,7 @@ router = APIRouter()
 
 @router.post("/client/", response_model=ClientResponse)
 def create_client(client: ClientCreate, db: Session = Depends(get_db)):
-    print()
-    print(client)
-    print()
+    
     if not valid_states(client.state):
         raise HTTPException(
             status_code=400,
@@ -43,7 +41,16 @@ def read_clients(db: Session = Depends(get_db)):
     return clients
 
 
-@router.get("/client/{direction}", response_model=list[ClientResponse])
+@router.get("/client/{client_id}", response_model=ClientResponse)
+def read_client(client_id: int, db: Session = Depends(get_db)):
+    print('TESTHERE')
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if client is None:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return client
+
+
+@router.get("/client/sort/{direction}", response_model=list[ClientResponse])
 def sort_by_date(direction: str, db: Session = Depends(get_db)):
     """
     sort client event dates ascending or descending
@@ -54,14 +61,6 @@ def sort_by_date(direction: str, db: Session = Depends(get_db)):
 
     clients = db.query(Client).order_by(Client.date.desc()).all()
     return clients
-
-
-@router.get("/client/{client_id}", response_model=ClientResponse)
-def read_client(client_id: int, db: Session = Depends(get_db)):
-    client = db.query(Client).filter(Client.id == client_id).first()
-    if client is None:
-        raise HTTPException(status_code=404, detail="Client not found")
-    return client
 
 
 @router.put("/client/{client_id}", response_model=ClientResponse)
