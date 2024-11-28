@@ -15,6 +15,7 @@ class Client(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
+    event_type = Column(String, index=True)
     address = Column(String, index=True)
     city = Column(String, index=True)
     state = Column(String, index=True)

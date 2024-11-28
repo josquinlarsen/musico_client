@@ -5,6 +5,7 @@ from datetime import date
 class ClientCreate(BaseModel):
     name: str
     email: str
+    event_type: str
     address: str
     city: str
     state: str
@@ -13,6 +14,7 @@ class ClientCreate(BaseModel):
 class ClientUpdate(BaseModel):
     name: str
     email: str
+    event_type: str
     address: str
     city: str
     state: str

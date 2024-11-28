@@ -22,6 +22,7 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     db_client = Client(
         name=client.name,
         email=client.email,
+        event_type=client.event_type,
         address=client.address,
         city=client.city,
         state=formatted_state,
@@ -30,7 +31,6 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
-    print(db_client)
     return db_client
 
 
@@ -79,6 +79,7 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
 
     db_client.name = client.name
     db_client.email = client.email
+    db_client.event_type = client.event_type
     db_client.address = client.address
     db_client.city = client.city
     db_client.state = formatted_state
