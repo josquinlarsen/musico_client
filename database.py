@@ -9,6 +9,7 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
 # Client model
 class Client(Base):
     """
@@ -26,8 +27,10 @@ class Client(Base):
     state = Column(String, index=True)
     date = Column(Date, index=True)
 
+
 # Create the database table
 Base.metadata.create_all(bind=engine)
+
 
 # Dependency to get DB session
 def get_db():

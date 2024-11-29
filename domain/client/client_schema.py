@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 
+
 # Pydantic schemas
 class ClientCreate(BaseModel):
     name: str
@@ -11,6 +12,7 @@ class ClientCreate(BaseModel):
     state: str
     date: date
 
+
 class ClientUpdate(BaseModel):
     name: str
     email: str
@@ -19,6 +21,7 @@ class ClientUpdate(BaseModel):
     city: str
     state: str
     date: date
+
 
 class ClientResponse(ClientCreate):
     id: int

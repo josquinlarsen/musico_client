@@ -1,5 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
-from sqlalchemy.orm import sessionmaker, Session
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 from domain.client.client_schema import ClientCreate, ClientUpdate, ClientResponse
 from database import get_db, Client
@@ -10,13 +10,17 @@ router = APIRouter()
 
 @router.post("/client/", response_model=ClientResponse)
 def create_client(client: ClientCreate, db: Session = Depends(get_db)):
-    
+    """
+    Create/Post new client
+    """
+    # check state in range
     if not valid_states(client.state):
         raise HTTPException(
             status_code=400,
             detail=f"I'm sorry, {client.state} is not within our service range",
         )
 
+    # format state to abbreviation
     formatted_state = format_state(client.state)
 
     db_client = Client(
@@ -28,6 +32,7 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
         state=formatted_state,
         date=client.date,
     )
+
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
@@ -36,15 +41,20 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
 
 @router.get("/client/", response_model=list[ClientResponse])
 def read_clients(db: Session = Depends(get_db)):
-    # remove skip and limit of 10
+    """
+    Get all clients
+    """
     clients = db.query(Client).all()
     return clients
 
 
 @router.get("/client/{client_id}", response_model=ClientResponse)
 def read_client(client_id: int, db: Session = Depends(get_db)):
-    print('TESTHERE')
+    """
+    get one client
+    """
     client = db.query(Client).filter(Client.id == client_id).first()
+
     if client is None:
         raise HTTPException(status_code=404, detail="Client not found")
     return client
@@ -65,6 +75,9 @@ def sort_by_date(direction: str, db: Session = Depends(get_db)):
 
 @router.put("/client/{client_id}", response_model=ClientResponse)
 def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(get_db)):
+    """
+    Update/Put client
+    """
     db_client = db.query(Client).filter(Client.id == client_id).first()
     if db_client is None:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -84,6 +97,7 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
     db_client.city = client.city
     db_client.state = formatted_state
     db_client.date = client.date
+
     db.commit()
     db.refresh(db_client)
     return db_client
@@ -91,6 +105,9 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
 
 @router.delete("/client/{client_id}")
 def delete_client(client_id: int, db: Session = Depends(get_db)):
+    """
+    Delete client
+    """
     db_client = db.query(Client).filter(Client.id == client_id).first()
     if db_client is None:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -105,7 +122,6 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
 # -----------------------------------------------------------------------
 
 
-# can probably combine state check/format into one function
 def valid_states(state: str) -> bool:
     """
     Determines if a state is a valid state (distance),
